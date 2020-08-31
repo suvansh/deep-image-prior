@@ -59,7 +59,7 @@ def get_image_grid(images_np, nrow=8):
     
     return torch_grid.numpy()
 
-def plot_image_grid(images_np, nrow =8, factor=1, interpolation='lanczos'):
+def plot_image_grid(images_np, nrow =8, factor=1, interpolation='lanczos', save_path='', show=True):
     """Draws images in a grid
     
     Args:
@@ -67,6 +67,8 @@ def plot_image_grid(images_np, nrow =8, factor=1, interpolation='lanczos'):
         nrow: how many images will be in one row
         factor: size if the plt.figure 
         interpolation: interpolation used in plt.imshow
+        save_path: string path to save to. doesn't save if empty (default)
+        show: whether to show the image (True by default)
     """
     n_channels = max(x.shape[0] for x in images_np)
     assert (n_channels == 3) or (n_channels == 1), "images should have 1 or 3 channels"
@@ -81,8 +83,12 @@ def plot_image_grid(images_np, nrow =8, factor=1, interpolation='lanczos'):
         plt.imshow(grid[0], cmap='gray', interpolation=interpolation)
     else:
         plt.imshow(grid.transpose(1, 2, 0), interpolation=interpolation)
-    
-    plt.show()
+    if save_path:
+        plt.savefig(save_path)
+    if show:
+        plt.show()
+    else:
+        plt.close()
     
     return grid
 
@@ -195,7 +201,7 @@ def torch_to_np(img_var):
     return img_var.detach().cpu().numpy()[0]
 
 
-def optimize(optimizer_type, parameters, closure, LR, num_iter):
+def optimize(optimizer_type, parameters, closure, LR, num_iter, pass_iter=False):
     """Runs optimization loop.
 
     Args:
@@ -204,6 +210,7 @@ def optimize(optimizer_type, parameters, closure, LR, num_iter):
         closure: function, that returns loss variable
         LR: learning rate
         num_iter: number of iterations 
+        pass_iter: whether to pass the iteration number to `closure`
     """
     if optimizer_type == 'LBFGS':
         # Do several steps with adam first
@@ -226,7 +233,10 @@ def optimize(optimizer_type, parameters, closure, LR, num_iter):
         
         for j in range(num_iter):
             optimizer.zero_grad()
-            closure()
+            if pass_iter:
+                closure(j)
+            else:
+                closure()
             optimizer.step()
     else:
         assert False
